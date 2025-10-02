@@ -116,7 +116,8 @@ class QuizVersion {
 }
 
 class QuizDataManager {
-  static const String currentVersion = "2.0.0";
+  static const String currentVersion = "3.1.0";
+  static const int questionsPerQuiz = 15; // Number of questions per quiz attempt
   
   static List<QuizVersion> getVersionHistory() {
     return [
@@ -138,10 +139,86 @@ class QuizDataManager {
         questions: _getAllQuestions(),
         changelog: "Major update: Added general knowledge questions covering Science, Geography, Earth Science, and Politics & History",
       ),
+      QuizVersion(
+        version: "3.0.0",
+        lastUpdated: DateTime(2024, 10, 2),
+        questions: _getAllQuestions(),
+        changelog: "Expanded content: Added Organic Chemistry, Inorganic Chemistry, Mathematics, and Physics questions",
+      ),
+      QuizVersion(
+        version: "3.1.0",
+        lastUpdated: DateTime(2024, 10, 2),
+        questions: _getAllQuestions(),
+        changelog: "Added dynamic question refresh: Each quiz attempt now presents a fresh selection of questions",
+      ),
     ];
   }
   
   static List<QuizQuestion> getCurrentQuestions() {
+    return getRandomQuestions();
+  }
+  
+  /// Gets a random selection of questions for each quiz attempt
+  static List<QuizQuestion> getRandomQuestions() {
+    final allQuestions = _getAllQuestions();
+    print('📚 Total questions available: ${allQuestions.length}');
+    
+    if (allQuestions.length <= questionsPerQuiz) {
+      print('🔄 Using all available questions (${allQuestions.length})');
+      final shuffled = List<QuizQuestion>.from(allQuestions);
+      shuffled.shuffle();
+      return shuffled;
+    }
+    
+    // Ensure we get a balanced mix from different categories
+    final Map<String, List<QuizQuestion>> questionsByCategory = {};
+    
+    // Group questions by category
+    for (final question in allQuestions) {
+      questionsByCategory.putIfAbsent(question.category, () => []).add(question);
+    }
+    
+    print('📊 Categories available: ${questionsByCategory.keys.join(', ')}');
+    
+    // Calculate questions per category (roughly equal distribution)
+    final categories = questionsByCategory.keys.toList();
+    final questionsPerCategory = questionsPerQuiz ~/ categories.length;
+    final extraQuestions = questionsPerQuiz % categories.length;
+    
+    print('🎯 Target: $questionsPerCategory questions per category (+$extraQuestions extra)');
+    
+    final selectedQuestions = <QuizQuestion>[];
+    
+    // Select questions from each category
+    for (int i = 0; i < categories.length; i++) {
+      final category = categories[i];
+      final categoryQuestions = List<QuizQuestion>.from(questionsByCategory[category]!);
+      categoryQuestions.shuffle();
+      
+      // Determine how many questions to take from this category
+      int questionsToTake = questionsPerCategory;
+      if (i < extraQuestions) {
+        questionsToTake++; // Distribute extra questions to first few categories
+      }
+      
+      // Take the determined number of questions from this category
+      final questionsFromCategory = categoryQuestions.take(questionsToTake).toList();
+      selectedQuestions.addAll(questionsFromCategory);
+      
+      print('📝 Selected ${questionsFromCategory.length} questions from $category');
+    }
+    
+    // Final shuffle to mix categories
+    selectedQuestions.shuffle();
+    
+    print('✅ Final quiz: ${selectedQuestions.length} questions selected');
+    print('🔀 Categories in quiz: ${selectedQuestions.map((q) => q.category).toSet().join(', ')}');
+    
+    return selectedQuestions;
+  }
+  
+  /// Gets all available questions (full pool)
+  static List<QuizQuestion> getAllAvailableQuestions() {
     return _getAllQuestions();
   }
   
@@ -193,6 +270,140 @@ class QuizDataManager {
         correctAnswer: 1,
         category: "Science",
         explanation: "The pancreas produces insulin, a hormone that regulates blood sugar levels.",
+      ),
+      
+      // Organic Chemistry Questions
+      QuizQuestion(
+        question: "What is the functional group present in alcohols?",
+        options: ["-COOH", "-OH", "-CHO", "-CO-"],
+        correctAnswer: 1,
+        category: "Organic Chemistry",
+        explanation: "The hydroxyl group (-OH) is the functional group that defines alcohols.",
+      ),
+      QuizQuestion(
+        question: "Which of the following is the simplest alkene?",
+        options: ["Methane", "Ethene", "Propene", "Butene"],
+        correctAnswer: 1,
+        category: "Organic Chemistry",
+        explanation: "Ethene (C₂H₄) is the simplest alkene, containing a carbon-carbon double bond.",
+      ),
+      QuizQuestion(
+        question: "What type of reaction is used to convert alkenes to alkanes?",
+        options: ["Oxidation", "Reduction", "Substitution", "Elimination"],
+        correctAnswer: 1,
+        category: "Organic Chemistry",
+        explanation: "Reduction reactions (like hydrogenation) convert alkenes to alkanes by adding hydrogen across the double bond.",
+      ),
+      QuizQuestion(
+        question: "Which compound has the molecular formula C₆H₆?",
+        options: ["Cyclohexane", "Benzene", "Hexane", "Toluene"],
+        correctAnswer: 1,
+        category: "Organic Chemistry",
+        explanation: "Benzene (C₆H₆) is an aromatic compound with a ring of six carbon atoms.",
+      ),
+      
+      // Inorganic Chemistry Questions
+      QuizQuestion(
+        question: "What is the oxidation state of chromium in K₂Cr₂O₇?",
+        options: ["+3", "+6", "+2", "+7"],
+        correctAnswer: 1,
+        category: "Inorganic Chemistry",
+        explanation: "In potassium dichromate (K₂Cr₂O₇), chromium has an oxidation state of +6.",
+      ),
+      QuizQuestion(
+        question: "Which acid is known as the 'king of chemicals'?",
+        options: ["Hydrochloric acid", "Nitric acid", "Sulfuric acid", "Phosphoric acid"],
+        correctAnswer: 2,
+        category: "Inorganic Chemistry",
+        explanation: "Sulfuric acid (H₂SO₄) is called the 'king of chemicals' due to its widespread industrial use.",
+      ),
+      QuizQuestion(
+        question: "What is the coordination number of the central atom in [Cu(NH₃)₄]²⁺?",
+        options: ["2", "4", "6", "8"],
+        correctAnswer: 1,
+        category: "Inorganic Chemistry",
+        explanation: "In the tetraamminecopper(II) ion, copper has a coordination number of 4.",
+      ),
+      QuizQuestion(
+        question: "Which noble gas has the highest boiling point?",
+        options: ["Helium", "Neon", "Argon", "Radon"],
+        correctAnswer: 3,
+        category: "Inorganic Chemistry",
+        explanation: "Radon has the highest boiling point among noble gases due to stronger van der Waals forces.",
+      ),
+      
+      // Mathematics Questions
+      QuizQuestion(
+        question: "What is the derivative of sin(x)?",
+        options: ["cos(x)", "-cos(x)", "sin(x)", "-sin(x)"],
+        correctAnswer: 0,
+        category: "Mathematics",
+        explanation: "The derivative of sin(x) with respect to x is cos(x).",
+      ),
+      QuizQuestion(
+        question: "What is the value of π (pi) to 3 decimal places?",
+        options: ["3.141", "3.142", "3.143", "3.144"],
+        correctAnswer: 1,
+        category: "Mathematics",
+        explanation: "π (pi) is approximately 3.142 when rounded to 3 decimal places.",
+      ),
+      QuizQuestion(
+        question: "What is the sum of angles in a triangle?",
+        options: ["90°", "180°", "270°", "360°"],
+        correctAnswer: 1,
+        category: "Mathematics",
+        explanation: "The sum of all interior angles in any triangle is always 180 degrees.",
+      ),
+      QuizQuestion(
+        question: "What is the quadratic formula?",
+        options: ["x = -b ± √(b²-4ac)/2a", "x = b ± √(b²+4ac)/2a", "x = -b ± √(b²+4ac)/2a", "x = b ± √(b²-4ac)/2a"],
+        correctAnswer: 0,
+        category: "Mathematics",
+        explanation: "The quadratic formula is x = (-b ± √(b²-4ac))/2a for solving ax² + bx + c = 0.",
+      ),
+      QuizQuestion(
+        question: "What is the integral of 1/x?",
+        options: ["ln(x) + C", "x + C", "1/x² + C", "e^x + C"],
+        correctAnswer: 0,
+        category: "Mathematics",
+        explanation: "The integral of 1/x is ln|x| + C, where C is the constant of integration.",
+      ),
+      
+      // Physics Questions
+      QuizQuestion(
+        question: "What is Newton's second law of motion?",
+        options: ["F = ma", "E = mc²", "v = u + at", "F = mg"],
+        correctAnswer: 0,
+        category: "Physics",
+        explanation: "Newton's second law states that Force equals mass times acceleration (F = ma).",
+      ),
+      QuizQuestion(
+        question: "What is the unit of electric current?",
+        options: ["Volt", "Ampere", "Ohm", "Watt"],
+        correctAnswer: 1,
+        category: "Physics",
+        explanation: "The ampere (A) is the SI unit of electric current.",
+      ),
+      QuizQuestion(
+        question: "What is the acceleration due to gravity on Earth?",
+        options: ["9.8 m/s²", "10 m/s²", "8.9 m/s²", "11 m/s²"],
+        correctAnswer: 0,
+        category: "Physics",
+        explanation: "The acceleration due to gravity on Earth is approximately 9.8 m/s².",
+      ),
+      QuizQuestion(
+        question: "Which physicist proposed the theory of relativity?",
+        options: ["Newton", "Einstein", "Galileo", "Planck"],
+        correctAnswer: 1,
+        category: "Physics",
+        explanation: "Albert Einstein proposed both the special and general theories of relativity.",
+      ),
+      QuizQuestion(
+        question: "What is the formula for kinetic energy?",
+        options: ["KE = mgh", "KE = ½mv²", "KE = mc²", "KE = Fd"],
+        correctAnswer: 1,
+        category: "Physics",
+        explanation: "Kinetic energy is given by KE = ½mv², where m is mass and v is velocity.",
       ),
       
       // Geography Questions
@@ -354,8 +565,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   }
 
   void _startQuiz() async {
+    print('🔥 START QUIZ BUTTON PRESSED!'); // Enhanced debug
     print('Start Quiz button clicked'); // Debug
     if (_usernameController.text.trim().isEmpty) {
+      print('❌ Username is empty!');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter your username')),
       );
@@ -376,6 +589,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     print('Saving profile to SharedPreferences...'); // Debug
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('userProfile', jsonEncode(profile.toJson()));
+
+    // Test questions loading with refresh info
+    print('🔄 Generating fresh question set...');
+    final totalQuestions = QuizDataManager.getAllAvailableQuestions().length;
+    final quizQuestions = QuizDataManager.getCurrentQuestions();
+    print('📚 Total questions in pool: $totalQuestions');
+    print('🎯 Questions for this quiz: ${quizQuestions.length}');
+    if (quizQuestions.isNotEmpty) {
+      print('📝 First question: ${quizQuestions.first.question}');
+      print('🏷️ First question category: ${quizQuestions.first.category}');
+    }
 
     print('Navigating to QuizScreen...'); // Debug
     if (mounted) {
@@ -402,11 +626,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnimation,
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const SizedBox(height: 20),
                   const Icon(
                     Icons.quiz,
                     size: 80,
@@ -423,7 +648,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'Test your knowledge on:\n• Science & Biology\n• Geography & World Facts\n• Earth Science & Environment\n• Politics & History',
+                    'Test your knowledge with fresh questions every time!\n\n📚 Question Pool: 33+ questions\n🎯 Per Quiz: 15 random questions\n\nCategories:\n• Science & Biology\n• Organic Chemistry\n• Inorganic Chemistry\n• Mathematics\n• Physics\n• Geography & World Facts\n• Earth Science & Environment\n• Politics & History',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -489,7 +714,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   ),
                   const SizedBox(height: 30),
                   ElevatedButton(
-                    onPressed: _startQuiz,
+                    onPressed: () {
+                      print('🔥 START QUIZ BUTTON PRESSED!'); // Enhanced debug
+                      _startQuiz();
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
@@ -584,7 +812,13 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     print('QuizScreen initState called'); // Debug
     _questions = QuizDataManager.getCurrentQuestions();
     print('Questions loaded: ${_questions.length}'); // Debug
-    _questions.shuffle(); // Add some randomness
+    print('🔄 Fresh question set generated for this attempt!');
+    
+    // Log the categories in this quiz attempt
+    final categories = _questions.map((q) => q.category).toSet();
+    print('📚 Categories in this quiz: ${categories.join(', ')}');
+    
+    // Don't shuffle again since getCurrentQuestions() already provides a randomized set
     _startTimer();
     _setupEventListeners();
     
@@ -697,6 +931,25 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.refresh, size: 16, color: Colors.white),
+                const SizedBox(width: 4),
+                Text(
+                  'Fresh',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
@@ -918,11 +1171,11 @@ class _ResultScreenState extends State<ResultScreen> with TickerProviderStateMix
   String _getPerformanceMessage() {
     final percentage = (widget.score / widget.totalQuestions) * 100;
     
-    if (percentage >= 90) return "Outstanding! You're a tech expert! 🎉";
-    if (percentage >= 80) return "Excellent work! Great knowledge! 👏";
-    if (percentage >= 70) return "Good job! Keep learning! 📚";
-    if (percentage >= 50) return "Not bad! Room for improvement! 💪";
-    return "Keep studying! You'll get better! 🚀";
+    if (percentage >= 90) return "Outstanding! You're a knowledge expert! 🎉\nTry again for a fresh set of questions!";
+    if (percentage >= 80) return "Excellent work! Great knowledge! 👏\nReady for another challenge?";
+    if (percentage >= 70) return "Good job! Keep learning! 📚\nEach new attempt brings different questions!";
+    if (percentage >= 50) return "Not bad! Room for improvement! 💪\nTry again with fresh questions!";
+    return "Keep studying! You'll get better! 🚀\nNew questions await your next attempt!";
   }
 
   void _shareResults() {
@@ -1160,8 +1413,8 @@ ${_getPerformanceMessage()}
                           (route) => false,
                         );
                       },
-                      icon: const Icon(Icons.replay),
-                      label: const Text('Play Again'),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Fresh Quiz'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
                         foregroundColor: Colors.white,
