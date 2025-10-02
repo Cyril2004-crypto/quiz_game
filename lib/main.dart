@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,7 +13,7 @@ class TechQuizApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tech Concepts Quiz',
+      title: 'General Knowledge Quiz',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
@@ -117,7 +116,7 @@ class QuizVersion {
 }
 
 class QuizDataManager {
-  static const String currentVersion = "1.2.0";
+  static const String currentVersion = "2.0.0";
   
   static List<QuizVersion> getVersionHistory() {
     return [
@@ -125,19 +124,19 @@ class QuizDataManager {
         version: "1.0.0",
         lastUpdated: DateTime(2024, 1, 1),
         questions: _getBasicQuestions(),
-        changelog: "Initial release with basic tech questions",
+        changelog: "Initial release with basic science questions",
       ),
       QuizVersion(
         version: "1.1.0",
         lastUpdated: DateTime(2024, 6, 1),
         questions: _getIntermediateQuestions(),
-        changelog: "Added event-driven programming questions",
+        changelog: "Added geography questions and expanded content",
       ),
       QuizVersion(
-        version: "1.2.0",
-        lastUpdated: DateTime(2024, 10, 1),
+        version: "2.0.0",
+        lastUpdated: DateTime(2024, 10, 2),
         questions: _getAllQuestions(),
-        changelog: "Added interoperability and virtual identity questions",
+        changelog: "Major update: Added general knowledge questions covering Science, Geography, Earth Science, and Politics & History",
       ),
     ];
   }
@@ -149,11 +148,11 @@ class QuizDataManager {
   static List<QuizQuestion> _getBasicQuestions() {
     return [
       QuizQuestion(
-        question: "What is version control?",
-        options: ["File backup", "Code history tracking", "Bug fixing", "Performance optimization"],
+        question: "What is the largest planet in our solar system?",
+        options: ["Earth", "Jupiter", "Saturn", "Neptune"],
         correctAnswer: 1,
-        category: "Version Control",
-        explanation: "Version control tracks changes to code over time, allowing developers to manage different versions.",
+        category: "Science",
+        explanation: "Jupiter is the largest planet in our solar system, with a mass greater than all other planets combined.",
       ),
     ];
   }
@@ -162,107 +161,130 @@ class QuizDataManager {
     return [
       ..._getBasicQuestions(),
       QuizQuestion(
-        question: "What characterizes event-driven programming?",
-        options: ["Sequential execution", "Response to events", "Loop-based logic", "Static flow"],
+        question: "What is the capital of Australia?",
+        options: ["Sydney", "Canberra", "Melbourne", "Perth"],
         correctAnswer: 1,
-        category: "Event-Driven Programming",
-        explanation: "Event-driven programming responds to user actions, system events, or messages from other programs.",
+        category: "Geography",
+        explanation: "Canberra is the capital city of Australia, located in the Australian Capital Territory.",
       ),
     ];
   }
   
   static List<QuizQuestion> _getAllQuestions() {
     return [
-      // Version Control Questions
+      // Science Questions
       QuizQuestion(
-        question: "What is the primary purpose of Git?",
-        options: ["File compression", "Version control", "Code compilation", "Database management"],
+        question: "What is the chemical symbol for gold?",
+        options: ["Go", "Au", "Ag", "Gd"],
         correctAnswer: 1,
-        category: "Version Control",
-        explanation: "Git is a distributed version control system for tracking changes in source code during software development.",
+        category: "Science",
+        explanation: "Au is the chemical symbol for gold, derived from the Latin word 'aurum'.",
       ),
       QuizQuestion(
-        question: "What does 'git commit' do?",
-        options: ["Deletes files", "Saves changes to repository", "Creates branches", "Merges code"],
-        correctAnswer: 1,
-        category: "Version Control",
-        explanation: "Git commit saves your changes to the local repository with a descriptive message.",
+        question: "What is the speed of light in vacuum?",
+        options: ["300,000 km/s", "299,792,458 m/s", "186,000 miles/s", "All of the above"],
+        correctAnswer: 3,
+        category: "Science",
+        explanation: "The speed of light in vacuum is approximately 299,792,458 meters per second, which equals about 300,000 km/s or 186,000 miles/s.",
       ),
       QuizQuestion(
-        question: "What is a merge conflict?",
-        options: ["Server error", "File corruption", "Conflicting changes", "Network issue"],
-        correctAnswer: 2,
-        category: "Version Control",
-        explanation: "A merge conflict occurs when Git cannot automatically resolve differences between commits.",
+        question: "Which organ in the human body produces insulin?",
+        options: ["Liver", "Pancreas", "Kidney", "Heart"],
+        correctAnswer: 1,
+        category: "Science",
+        explanation: "The pancreas produces insulin, a hormone that regulates blood sugar levels.",
       ),
       
-      // Event-Driven Programming Questions
+      // Geography Questions
       QuizQuestion(
-        question: "What is an event listener?",
-        options: ["Database query", "Function that responds to events", "Loop structure", "Variable type"],
+        question: "Which is the longest river in the world?",
+        options: ["Amazon River", "Nile River", "Yangtze River", "Mississippi River"],
         correctAnswer: 1,
-        category: "Event-Driven Programming",
-        explanation: "An event listener is a function that waits for and responds to specific events.",
+        category: "Geography",
+        explanation: "The Nile River is traditionally considered the longest river in the world at approximately 6,650 kilometers.",
       ),
       QuizQuestion(
-        question: "Which of these is an example of event-driven programming?",
-        options: ["Calculating math", "Responding to button clicks", "Reading files", "Sorting arrays"],
+        question: "What is the smallest country in the world?",
+        options: ["Monaco", "Vatican City", "San Marino", "Liechtenstein"],
         correctAnswer: 1,
-        category: "Event-Driven Programming",
-        explanation: "Button clicks are events that trigger responses in event-driven programming.",
+        category: "Geography",
+        explanation: "Vatican City is the smallest country in the world with an area of just 0.17 square miles.",
       ),
       QuizQuestion(
-        question: "What is asynchronous programming?",
-        options: ["Blocking execution", "Non-blocking execution", "Sequential processing", "Synchronous calls"],
+        question: "Which mountain range contains Mount Everest?",
+        options: ["Andes", "Himalayas", "Rocky Mountains", "Alps"],
         correctAnswer: 1,
-        category: "Event-Driven Programming",
-        explanation: "Asynchronous programming allows code to run without blocking the main thread.",
-      ),
-      
-      // Interoperability Questions
-      QuizQuestion(
-        question: "What is interoperability in software?",
-        options: ["Speed optimization", "System compatibility", "Memory management", "User interface"],
-        correctAnswer: 1,
-        category: "Interoperability",
-        explanation: "Interoperability is the ability of different systems to work together and exchange data.",
-      ),
-      QuizQuestion(
-        question: "What is an API?",
-        options: ["Database", "Application Programming Interface", "Operating System", "Web Browser"],
-        correctAnswer: 1,
-        category: "Interoperability",
-        explanation: "An API defines how different software components should interact with each other.",
-      ),
-      QuizQuestion(
-        question: "What format is commonly used for data exchange?",
-        options: ["HTML", "JSON", "CSS", "SQL"],
-        correctAnswer: 1,
-        category: "Interoperability",
-        explanation: "JSON (JavaScript Object Notation) is a lightweight, text-based data interchange format.",
+        category: "Geography",
+        explanation: "Mount Everest is located in the Himalayas on the border between Nepal and Tibet.",
       ),
       
-      // Virtual Identity Questions
+      // Earth Science Questions
       QuizQuestion(
-        question: "What is a digital identity?",
-        options: ["Physical ID card", "Online representation", "Password", "Email address"],
+        question: "What causes earthquakes?",
+        options: ["Ocean tides", "Tectonic plate movement", "Weather changes", "Magnetic fields"],
         correctAnswer: 1,
-        category: "Virtual Identity",
-        explanation: "Digital identity is the online representation of a person, organization, or electronic device.",
+        category: "Earth Science",
+        explanation: "Earthquakes are primarily caused by the movement of tectonic plates beneath the Earth's surface.",
       ),
       QuizQuestion(
-        question: "What is authentication?",
-        options: ["Creating accounts", "Verifying identity", "Storing passwords", "Sending emails"],
+        question: "What is the Earth's outermost layer called?",
+        options: ["Mantle", "Crust", "Core", "Atmosphere"],
         correctAnswer: 1,
-        category: "Virtual Identity",
-        explanation: "Authentication is the process of verifying the identity of a user or system.",
+        category: "Earth Science",
+        explanation: "The crust is the Earth's outermost solid layer, where we live and where most geological activity occurs.",
       ),
       QuizQuestion(
-        question: "What is single sign-on (SSO)?",
-        options: ["One password only", "Multiple logins", "Authentication for multiple services", "Account deletion"],
-        correctAnswer: 2,
-        category: "Virtual Identity",
-        explanation: "SSO allows users to access multiple applications with one set of credentials.",
+        question: "What type of rock is formed by volcanic activity?",
+        options: ["Sedimentary", "Igneous", "Metamorphic", "Composite"],
+        correctAnswer: 1,
+        category: "Earth Science",
+        explanation: "Igneous rocks are formed when molten rock (magma or lava) cools and solidifies.",
+      ),
+      
+      // Politics & History Questions
+      QuizQuestion(
+        question: "Who was the first President of the United States?",
+        options: ["Thomas Jefferson", "George Washington", "John Adams", "Benjamin Franklin"],
+        correctAnswer: 1,
+        category: "Politics & History",
+        explanation: "George Washington was the first President of the United States, serving from 1789 to 1797.",
+      ),
+      QuizQuestion(
+        question: "In which year did World War II end?",
+        options: ["1944", "1945", "1946", "1947"],
+        correctAnswer: 1,
+        category: "Politics & History",
+        explanation: "World War II ended in 1945 with the surrender of Japan in September following the atomic bombings.",
+      ),
+      QuizQuestion(
+        question: "What is the United Nations headquarters located?",
+        options: ["Geneva", "New York City", "London", "Paris"],
+        correctAnswer: 1,
+        category: "Politics & History",
+        explanation: "The United Nations headquarters is located in New York City, United States.",
+      ),
+      
+      // Additional Science Questions
+      QuizQuestion(
+        question: "What gas do plants absorb from the atmosphere during photosynthesis?",
+        options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"],
+        correctAnswer: 1,
+        category: "Science",
+        explanation: "Plants absorb carbon dioxide from the atmosphere and convert it into glucose during photosynthesis.",
+      ),
+      QuizQuestion(
+        question: "What is the hardest natural substance on Earth?",
+        options: ["Iron", "Diamond", "Quartz", "Granite"],
+        correctAnswer: 1,
+        category: "Science",
+        explanation: "Diamond is the hardest natural substance on Earth, rating 10 on the Mohs hardness scale.",
+      ),
+      QuizQuestion(
+        question: "How many chambers does a human heart have?",
+        options: ["Two", "Four", "Six", "Eight"],
+        correctAnswer: 1,
+        category: "Science",
+        explanation: "The human heart has four chambers: two atria and two ventricles.",
       ),
     ];
   }
@@ -332,6 +354,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   }
 
   void _startQuiz() async {
+    print('Start Quiz button clicked'); // Debug
     if (_usernameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter your username')),
@@ -339,6 +362,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       return;
     }
 
+    print('Creating user profile...'); // Debug
     // Save user profile
     final profile = UserProfile(
       username: _usernameController.text.trim(),
@@ -349,14 +373,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       lastPlayed: DateTime.now(),
     );
     
+    print('Saving profile to SharedPreferences...'); // Debug
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('userProfile', jsonEncode(profile.toJson()));
 
+    print('Navigating to QuizScreen...'); // Debug
     if (mounted) {
       Navigator.push(
         context,
-        MaterialApp.createRoute(
-          context: context,
+        MaterialPageRoute(
           builder: (context) => QuizScreen(userProfile: profile),
         ),
       );
@@ -389,7 +414,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   ),
                   const SizedBox(height: 24),
                   const Text(
-                    'Tech Concepts Quiz',
+                    'General Knowledge Quiz',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -398,7 +423,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'Test your knowledge on:\n• Version Control\n• Event-Driven Programming\n• Interoperability\n• Virtual Identity',
+                    'Test your knowledge on:\n• Science & Biology\n• Geography & World Facts\n• Earth Science & Environment\n• Politics & History',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -483,6 +508,54 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   }
 }
 
+// Test Screen to debug navigation
+class TestScreen extends StatelessWidget {
+  final UserProfile userProfile;
+
+  const TestScreen({super.key, required this.userProfile});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Test Screen - ${userProfile.username}'),
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Navigation works!',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            Text('User: ${userProfile.avatar} ${userProfile.username}'),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => QuizScreen(userProfile: userProfile),
+                  ),
+                );
+              },
+              child: Text('Go to Quiz'),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Go Back'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // Main Quiz Screen with Event-Driven Programming
 class QuizScreen extends StatefulWidget {
   final UserProfile userProfile;
@@ -508,7 +581,9 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    print('QuizScreen initState called'); // Debug
     _questions = QuizDataManager.getCurrentQuestions();
+    print('Questions loaded: ${_questions.length}'); // Debug
     _questions.shuffle(); // Add some randomness
     _startTimer();
     _setupEventListeners();
@@ -601,8 +676,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     
     Navigator.pushReplacement(
       context,
-      MaterialApp.createRoute(
-        context: context,
+      MaterialPageRoute(
         builder: (context) => ResultScreen(
           score: _score,
           totalQuestions: _questions.length,
@@ -1080,14 +1154,13 @@ ${_getPerformanceMessage()}
                       onPressed: () {
                         Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialApp.createRoute(
-                            context: context,
+                          MaterialPageRoute(
                             builder: (context) => const WelcomeScreen(),
                           ),
                           (route) => false,
                         );
                       },
-                      icon: const Icon(Icons.refresh),
+                      icon: const Icon(Icons.replay),
                       label: const Text('Play Again'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
