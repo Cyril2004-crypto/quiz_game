@@ -7,18 +7,63 @@ void main() {
   runApp(const TechQuizApp());
 }
 
-class TechQuizApp extends StatelessWidget {
+class TechQuizApp extends StatefulWidget {
   const TechQuizApp({super.key});
+
+  @override
+  State<TechQuizApp> createState() => _TechQuizAppState();
+}
+
+class _TechQuizAppState extends State<TechQuizApp> {
+  AppTheme _currentTheme = AppTheme.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  void _loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final profileJson = prefs.getString('userProfile');
+    if (profileJson != null) {
+      final profile = UserProfile.fromJson(jsonDecode(profileJson));
+      setState(() {
+        _currentTheme = profile.preferredTheme;
+      });
+    }
+  }
+
+  void updateTheme(AppTheme theme) {
+    setState(() {
+      _currentTheme = theme;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'General Knowledge Quiz',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+          brightness: _currentTheme == AppTheme.dark ? Brightness.dark : Brightness.light,
+        ),
         useMaterial3: true,
       ),
-      home: const WelcomeScreen(),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      themeMode: _currentTheme == AppTheme.dark 
+          ? ThemeMode.dark 
+          : _currentTheme == AppTheme.light 
+              ? ThemeMode.light 
+              : ThemeMode.system,
+      home: WelcomeScreen(onThemeChanged: updateTheme),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -32,6 +77,12 @@ class UserProfile {
   final int gamesPlayed;
   final List<String> achievements;
   final DateTime lastPlayed;
+  final DifficultyMode preferredDifficulty;
+  final AppTheme preferredTheme;
+  final List<String> favoriteQuestions;
+  final Map<String, int> categoryStats;
+  final int currentStreak;
+  final int bestStreak;
 
   UserProfile({
     required this.username,
@@ -40,6 +91,12 @@ class UserProfile {
     required this.gamesPlayed,
     required this.achievements,
     required this.lastPlayed,
+    this.preferredDifficulty = DifficultyMode.medium,
+    this.preferredTheme = AppTheme.system,
+    this.favoriteQuestions = const [],
+    this.categoryStats = const {},
+    this.currentStreak = 0,
+    this.bestStreak = 0,
   });
 
   Map<String, dynamic> toJson() {
@@ -50,6 +107,12 @@ class UserProfile {
       'gamesPlayed': gamesPlayed,
       'achievements': achievements,
       'lastPlayed': lastPlayed.toIso8601String(),
+      'preferredDifficulty': preferredDifficulty.name,
+      'preferredTheme': preferredTheme.name,
+      'favoriteQuestions': favoriteQuestions,
+      'categoryStats': categoryStats,
+      'currentStreak': currentStreak,
+      'bestStreak': bestStreak,
     };
   }
 
@@ -61,6 +124,48 @@ class UserProfile {
       gamesPlayed: json['gamesPlayed'] ?? 0,
       achievements: List<String>.from(json['achievements'] ?? []),
       lastPlayed: DateTime.parse(json['lastPlayed'] ?? DateTime.now().toIso8601String()),
+      preferredDifficulty: DifficultyMode.values.firstWhere(
+        (d) => d.name == json['preferredDifficulty'],
+        orElse: () => DifficultyMode.medium,
+      ),
+      preferredTheme: AppTheme.values.firstWhere(
+        (t) => t.name == json['preferredTheme'],
+        orElse: () => AppTheme.system,
+      ),
+      favoriteQuestions: List<String>.from(json['favoriteQuestions'] ?? []),
+      categoryStats: Map<String, int>.from(json['categoryStats'] ?? {}),
+      currentStreak: json['currentStreak'] ?? 0,
+      bestStreak: json['bestStreak'] ?? 0,
+    );
+  }
+
+  UserProfile copyWith({
+    String? username,
+    String? avatar,
+    int? totalScore,
+    int? gamesPlayed,
+    List<String>? achievements,
+    DateTime? lastPlayed,
+    DifficultyMode? preferredDifficulty,
+    AppTheme? preferredTheme,
+    List<String>? favoriteQuestions,
+    Map<String, int>? categoryStats,
+    int? currentStreak,
+    int? bestStreak,
+  }) {
+    return UserProfile(
+      username: username ?? this.username,
+      avatar: avatar ?? this.avatar,
+      totalScore: totalScore ?? this.totalScore,
+      gamesPlayed: gamesPlayed ?? this.gamesPlayed,
+      achievements: achievements ?? this.achievements,
+      lastPlayed: lastPlayed ?? this.lastPlayed,
+      preferredDifficulty: preferredDifficulty ?? this.preferredDifficulty,
+      preferredTheme: preferredTheme ?? this.preferredTheme,
+      favoriteQuestions: favoriteQuestions ?? this.favoriteQuestions,
+      categoryStats: categoryStats ?? this.categoryStats,
+      currentStreak: currentStreak ?? this.currentStreak,
+      bestStreak: bestStreak ?? this.bestStreak,
     );
   }
 }
@@ -115,8 +220,32 @@ class QuizVersion {
   });
 }
 
+// Difficulty Modes for Timer
+enum DifficultyMode { 
+  easy(45, "Easy", "45s per question"),
+  medium(30, "Medium", "30s per question"),
+  hard(15, "Hard", "15s per question"),
+  expert(10, "Expert", "10s per question");
+  
+  const DifficultyMode(this.timeLimit, this.name, this.description);
+  final int timeLimit;
+  final String name;
+  final String description;
+}
+
+// Theme Management
+enum AppTheme {
+  light("Light", Icons.light_mode),
+  dark("Dark", Icons.dark_mode),
+  system("System", Icons.settings);
+  
+  const AppTheme(this.name, this.icon);
+  final String name;
+  final IconData icon;
+}
+
 class QuizDataManager {
-  static const String currentVersion = "3.1.0";
+  static const String currentVersion = "3.2.0";
   static const int questionsPerQuiz = 15; // Number of questions per quiz attempt
   
   static List<QuizVersion> getVersionHistory() {
@@ -150,6 +279,12 @@ class QuizDataManager {
         lastUpdated: DateTime(2024, 10, 2),
         questions: _getAllQuestions(),
         changelog: "Added dynamic question refresh: Each quiz attempt now presents a fresh selection of questions",
+      ),
+      QuizVersion(
+        version: "3.2.0",
+        lastUpdated: DateTime(2024, 10, 6),
+        questions: _getAllQuestions(),
+        changelog: "Enhanced UX: Added timer difficulty modes, dark/light themes, detailed statistics, and question favorites system",
       ),
     ];
   }
@@ -519,7 +654,9 @@ class QuizQuestion {
 
 // Welcome Screen with Virtual Identity Setup
 class WelcomeScreen extends StatefulWidget {
-  const WelcomeScreen({super.key});
+  final Function(AppTheme)? onThemeChanged;
+  
+  const WelcomeScreen({super.key, this.onThemeChanged});
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
@@ -528,6 +665,8 @@ class WelcomeScreen extends StatefulWidget {
 class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
   final TextEditingController _usernameController = TextEditingController();
   String _selectedAvatar = '👤';
+  DifficultyMode _selectedDifficulty = DifficultyMode.medium;
+  AppTheme _selectedTheme = AppTheme.system;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   
@@ -560,6 +699,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       _usernameController.text = profile.username;
       setState(() {
         _selectedAvatar = profile.avatar;
+        _selectedDifficulty = profile.preferredDifficulty;
+        _selectedTheme = profile.preferredTheme;
       });
     }
   }
@@ -584,11 +725,22 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       gamesPlayed: 0,
       achievements: [],
       lastPlayed: DateTime.now(),
+      preferredDifficulty: _selectedDifficulty,
+      preferredTheme: _selectedTheme,
+      favoriteQuestions: [],
+      categoryStats: {},
+      currentStreak: 0,
+      bestStreak: 0,
     );
     
     print('Saving profile to SharedPreferences...'); // Debug
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('userProfile', jsonEncode(profile.toJson()));
+
+    // Apply theme change
+    if (widget.onThemeChanged != null) {
+      widget.onThemeChanged!(_selectedTheme);
+    }
 
     // Test questions loading with refresh info
     print('🔄 Generating fresh question set...');
@@ -612,9 +764,107 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     }
   }
 
+  void _showSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Settings'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Difficulty Mode', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<DifficultyMode>(
+              value: _selectedDifficulty,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              items: DifficultyMode.values.map((difficulty) {
+                return DropdownMenuItem(
+                  value: difficulty,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(difficulty.name),
+                      Text(
+                        difficulty.description,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedDifficulty = value;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            const Text('Theme', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<AppTheme>(
+              value: _selectedTheme,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              items: AppTheme.values.map((theme) {
+                return DropdownMenuItem(
+                  value: theme,
+                  child: Row(
+                    children: [
+                      Icon(theme.icon, size: 20),
+                      const SizedBox(width: 8),
+                      Text(theme.name),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedTheme = value;
+                  });
+                  if (widget.onThemeChanged != null) {
+                    widget.onThemeChanged!(value);
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Quiz Settings'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: _showSettingsDialog,
+            tooltip: 'Settings',
+          ),
+        ],
+      ),
+      extendBodyBehindAppBar: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -646,9 +896,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                       color: Colors.white,
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'v3.2.0 • ${_selectedDifficulty.name} Mode',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   const Text(
-                    'Test your knowledge with fresh questions every time!\n\n📚 Question Pool: 33+ questions\n🎯 Per Quiz: 15 random questions\n\nCategories:\n• Science & Biology\n• Organic Chemistry\n• Inorganic Chemistry\n• Mathematics\n• Physics\n• Geography & World Facts\n• Earth Science & Environment\n• Politics & History',
+                    'Test your knowledge with fresh questions every time!\n\n📚 Question Pool: 33+ questions\n🎯 Per Quiz: 15 random questions\n⏱️ Timer: Adjustable difficulty modes\n🎨 Themes: Light, Dark, System\n\nCategories:\n• Science & Biology\n• Organic Chemistry\n• Inorganic Chemistry\n• Mathematics\n• Physics\n• Geography & World Facts\n• Earth Science & Environment\n• Politics & History',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -801,7 +1066,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   int? _selectedAnswer;
   bool _showExplanation = false;
   late Timer _timer;
-  int _timeRemaining = 30;
+  late int _timeRemaining;
   final GameEventHandler _eventHandler = GameEventHandler();
   late AnimationController _progressAnimationController;
   late Animation<double> _progressAnimation;
@@ -811,8 +1076,10 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     super.initState();
     print('QuizScreen initState called'); // Debug
     _questions = QuizDataManager.getCurrentQuestions();
+    _timeRemaining = widget.userProfile.preferredDifficulty.timeLimit;
     print('Questions loaded: ${_questions.length}'); // Debug
     print('🔄 Fresh question set generated for this attempt!');
+    print('⏱️ Difficulty: ${widget.userProfile.preferredDifficulty.name} (${widget.userProfile.preferredDifficulty.timeLimit}s per question)');
     
     // Log the categories in this quiz attempt
     final categories = _questions.map((q) => q.category).toSet();
@@ -894,7 +1161,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         _currentQuestionIndex++;
         _selectedAnswer = null;
         _showExplanation = false;
-        _timeRemaining = 30;
+        _timeRemaining = widget.userProfile.preferredDifficulty.timeLimit;
         _progressAnimationController.reset();
         _progressAnimationController.forward();
         _startTimer();
@@ -915,6 +1182,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
           score: _score,
           totalQuestions: _questions.length,
           userProfile: widget.userProfile,
+          questions: _questions,
         ),
       ),
     );
@@ -931,6 +1199,25 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.orange,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.speed, size: 16, color: Colors.white),
+                const SizedBox(width: 4),
+                Text(
+                  widget.userProfile.preferredDifficulty.name,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
           Container(
             margin: const EdgeInsets.only(right: 8),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1102,12 +1389,14 @@ class ResultScreen extends StatefulWidget {
   final int score;
   final int totalQuestions;
   final UserProfile userProfile;
+  final List<QuizQuestion> questions;
 
   const ResultScreen({
     super.key,
     required this.score,
     required this.totalQuestions,
     required this.userProfile,
+    required this.questions,
   });
 
   @override
@@ -1130,8 +1419,11 @@ class _ResultScreenState extends State<ResultScreen> with TickerProviderStateMix
         .animate(CurvedAnimation(parent: _scoreAnimationController, curve: Curves.easeInOut));
     
     _scoreAnimationController.forward();
-    _updateUserProfile();
     _checkAchievements();
+    // Update profile after a short delay to ensure animation starts
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _updateUserProfile();
+    });
   }
 
   @override
@@ -1141,17 +1433,40 @@ class _ResultScreenState extends State<ResultScreen> with TickerProviderStateMix
   }
 
   void _updateUserProfile() async {
-    final updatedProfile = UserProfile(
-      username: widget.userProfile.username,
-      avatar: widget.userProfile.avatar,
+    print('🔄 Starting profile update...');
+    print('📊 Current profile - Games: ${widget.userProfile.gamesPlayed}, Score: ${widget.userProfile.totalScore}');
+    
+    // Calculate category statistics - track questions attempted per category
+    final Map<String, int> newCategoryStats = Map<String, int>.from(widget.userProfile.categoryStats);
+    
+    for (final question in widget.questions) {
+      final category = question.category;
+      newCategoryStats[category] = (newCategoryStats[category] ?? 0) + 1;
+    }
+
+    // Calculate streak based on performance
+    double accuracy = widget.score / widget.totalQuestions;
+    int newCurrentStreak = accuracy >= 0.7 ? widget.userProfile.currentStreak + 1 : 0;
+    int newBestStreak = newCurrentStreak > widget.userProfile.bestStreak ? newCurrentStreak : widget.userProfile.bestStreak;
+
+    final updatedProfile = widget.userProfile.copyWith(
       totalScore: widget.userProfile.totalScore + widget.score,
       gamesPlayed: widget.userProfile.gamesPlayed + 1,
       achievements: [...widget.userProfile.achievements, ..._newAchievements],
       lastPlayed: DateTime.now(),
+      categoryStats: newCategoryStats,
+      currentStreak: newCurrentStreak,
+      bestStreak: newBestStreak,
     );
     
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('userProfile', jsonEncode(updatedProfile.toJson()));
+    
+    print('✅ Profile updated successfully!');
+    print('📊 New profile - Games: ${updatedProfile.gamesPlayed}, Total Score: ${updatedProfile.totalScore}');
+    print('🎯 Category stats: $newCategoryStats');
+    print('🔥 Streak: Current ${newCurrentStreak}, Best ${newBestStreak}');
+    print('🏆 Achievements: ${updatedProfile.achievements}');
   }
 
   void _checkAchievements() {
@@ -1281,6 +1596,84 @@ ${_getPerformanceMessage()}
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
           ),
+        ],
+      ),
+    );
+  }
+
+  void _viewStatistics() async {
+    // Reload the latest user profile to get updated stats
+    final prefs = await SharedPreferences.getInstance();
+    final profileJson = prefs.getString('userProfile');
+    
+    UserProfile currentProfile = widget.userProfile;
+    if (profileJson != null) {
+      currentProfile = UserProfile.fromJson(jsonDecode(profileJson));
+      print('📊 Loaded fresh profile: Games: ${currentProfile.gamesPlayed}, Score: ${currentProfile.totalScore}');
+    }
+    
+    final totalQuestionsAnswered = currentProfile.categoryStats.values.fold(0, (a, b) => a + b);
+    final averageScore = currentProfile.gamesPlayed > 0 
+        ? (currentProfile.totalScore / currentProfile.gamesPlayed).round()
+        : 0;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('📊 Your Statistics'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatRow('🎮 Games Played', '${currentProfile.gamesPlayed}'),
+              _buildStatRow('📈 Total Score', '${currentProfile.totalScore}'),
+              _buildStatRow('⭐ Average Score', '$averageScore per game'),
+              _buildStatRow('❓ Questions Answered', '$totalQuestionsAnswered'),
+              _buildStatRow('🏆 Achievements', '${currentProfile.achievements.length}'),
+              _buildStatRow('🔥 Current Streak', '${currentProfile.currentStreak}'),
+              _buildStatRow('🥇 Best Streak', '${currentProfile.bestStreak}'),
+              _buildStatRow('⚡ Difficulty', currentProfile.preferredDifficulty.name.toUpperCase()),
+              const SizedBox(height: 16),
+              const Text('📚 Category Breakdown:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              if (currentProfile.categoryStats.isNotEmpty)
+                ...currentProfile.categoryStats.entries.map((entry) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: Text(entry.key, style: const TextStyle(fontSize: 12))),
+                        Text('${entry.value} questions', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  );
+                }).toList()
+              else
+                const Text('No category data yet', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 14)),
+          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -1417,6 +1810,15 @@ ${_getPerformanceMessage()}
                       label: const Text('Fresh Quiz'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _viewStatistics,
+                      icon: const Icon(Icons.analytics),
+                      label: const Text('Stats'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
                         foregroundColor: Colors.white,
                       ),
                     ),
