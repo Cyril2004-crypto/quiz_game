@@ -286,6 +286,13 @@ class QuizDataManager {
         questions: _getAllQuestions(),
         changelog: "Enhanced UX: Added timer difficulty modes, dark/light themes, detailed statistics, and question favorites system",
       ),
+      // Planned release for next week
+      // QuizVersion(
+      //   version: "3.3.0",
+      //   lastUpdated: DateTime(2024, 10, 13), // Next week
+      //   questions: _getAllQuestions(),
+      //   changelog: "Coming soon: Additional features and improvements planned for next week",
+      // ),
     ];
   }
   
@@ -849,6 +856,85 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     );
   }
 
+  void _showFavoritesFromWelcome(UserProfile profile) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('❤️ Your Favorite Questions'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: profile.favoriteQuestions.isEmpty
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.favorite_border, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        'No favorites yet!',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Start a quiz and tap the ❤️ icon on questions you find interesting!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: profile.favoriteQuestions.length,
+                  itemBuilder: (context, index) {
+                    final questionText = profile.favoriteQuestions[index];
+                    // Find the corresponding question object for category info
+                    final allQuestions = QuizDataManager.getAllAvailableQuestions();
+                    final questionObj = allQuestions.firstWhere(
+                      (q) => q.question == questionText,
+                      orElse: () => QuizQuestion(
+                        question: questionText,
+                        options: [],
+                        correctAnswer: 0,
+                        category: "Unknown",
+                        explanation: "",
+                      ),
+                    );
+                    
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: const Icon(Icons.favorite, color: Colors.red),
+                        title: Text(
+                          questionText,
+                          style: const TextStyle(fontSize: 14),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          questionObj.category,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.indigo,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -857,6 +943,22 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite),
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              final profileJson = prefs.getString('userProfile');
+              if (profileJson != null) {
+                final profile = UserProfile.fromJson(jsonDecode(profileJson));
+                _showFavoritesFromWelcome(profile);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No profile found. Start a quiz first!')),
+                );
+              }
+            },
+            tooltip: 'View Favorites',
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: _showSettingsDialog,
@@ -1171,6 +1273,47 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     });
   }
 
+  void _toggleFavorite(String questionText) async {
+    final prefs = await SharedPreferences.getInstance();
+    final profileJson = prefs.getString('userProfile');
+    
+    if (profileJson != null) {
+      UserProfile currentProfile = UserProfile.fromJson(jsonDecode(profileJson));
+      List<String> updatedFavorites = List<String>.from(currentProfile.favoriteQuestions);
+      
+      if (updatedFavorites.contains(questionText)) {
+        updatedFavorites.remove(questionText);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❤️ Removed from favorites'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      } else {
+        updatedFavorites.add(questionText);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⭐ Added to favorites!'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+      
+      final updatedProfile = currentProfile.copyWith(favoriteQuestions: updatedFavorites);
+      await prefs.setString('userProfile', jsonEncode(updatedProfile.toJson()));
+      
+      // Update the local userProfile reference for immediate UI update
+      setState(() {
+        widget.userProfile.favoriteQuestions.clear();
+        widget.userProfile.favoriteQuestions.addAll(updatedFavorites);
+      });
+    }
+  }
+
   void _endQuiz() {
     _timer.cancel();
     _eventHandler.addEvent(GameEndEvent(_score, _questions.length));
@@ -1290,21 +1433,38 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 16),
             
-            // Category Badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.indigo.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.indigo),
-              ),
-              child: Text(
-                question.category,
-                style: const TextStyle(
-                  color: Colors.indigo,
-                  fontWeight: FontWeight.bold,
+            // Category Badge and Favorite Button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.indigo),
+                  ),
+                  child: Text(
+                    question.category,
+                    style: const TextStyle(
+                      color: Colors.indigo,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+                IconButton(
+                  onPressed: () => _toggleFavorite(question.question),
+                  icon: Icon(
+                    widget.userProfile.favoriteQuestions.contains(question.question)
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    color: widget.userProfile.favoriteQuestions.contains(question.question)
+                        ? Colors.red
+                        : Colors.grey,
+                  ),
+                  tooltip: 'Add to favorites',
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             
@@ -1631,6 +1791,7 @@ ${_getPerformanceMessage()}
               _buildStatRow('📈 Total Score', '${currentProfile.totalScore}'),
               _buildStatRow('⭐ Average Score', '$averageScore per game'),
               _buildStatRow('❓ Questions Answered', '$totalQuestionsAnswered'),
+              _buildStatRow('❤️ Favorite Questions', '${currentProfile.favoriteQuestions.length}'),
               _buildStatRow('🏆 Achievements', '${currentProfile.achievements.length}'),
               _buildStatRow('🔥 Current Streak', '${currentProfile.currentStreak}'),
               _buildStatRow('🥇 Best Streak', '${currentProfile.bestStreak}'),
@@ -1661,6 +1822,133 @@ ${_getPerformanceMessage()}
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
           ),
+        ],
+      ),
+    );
+  }
+
+  void _viewFavorites() async {
+    // Reload the latest user profile to get updated favorites
+    final prefs = await SharedPreferences.getInstance();
+    final profileJson = prefs.getString('userProfile');
+    
+    UserProfile currentProfile = widget.userProfile;
+    if (profileJson != null) {
+      currentProfile = UserProfile.fromJson(jsonDecode(profileJson));
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('❤️ Your Favorite Questions'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: currentProfile.favoriteQuestions.isEmpty
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.favorite_border, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        'No favorites yet!',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Tap the ❤️ icon during quiz to save questions you find interesting!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: currentProfile.favoriteQuestions.length,
+                  itemBuilder: (context, index) {
+                    final questionText = currentProfile.favoriteQuestions[index];
+                    // Find the corresponding question object for category info
+                    final allQuestions = QuizDataManager.getAllAvailableQuestions();
+                    final questionObj = allQuestions.firstWhere(
+                      (q) => q.question == questionText,
+                      orElse: () => QuizQuestion(
+                        question: questionText,
+                        options: [],
+                        correctAnswer: 0,
+                        category: "Unknown",
+                        explanation: "",
+                      ),
+                    );
+                    
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: const Icon(Icons.favorite, color: Colors.red),
+                        title: Text(
+                          questionText,
+                          style: const TextStyle(fontSize: 14),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          questionObj.category,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.indigo,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.grey),
+                          onPressed: () async {
+                            // Remove from favorites
+                            List<String> updatedFavorites = List<String>.from(currentProfile.favoriteQuestions);
+                            updatedFavorites.remove(questionText);
+                            
+                            final updatedProfile = currentProfile.copyWith(favoriteQuestions: updatedFavorites);
+                            await prefs.setString('userProfile', jsonEncode(updatedProfile.toJson()));
+                            
+                            Navigator.pop(context);
+                            _viewFavorites(); // Refresh the dialog
+                            
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('❤️ Removed from favorites'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          if (currentProfile.favoriteQuestions.isNotEmpty)
+            TextButton(
+              onPressed: () async {
+                // Clear all favorites
+                final updatedProfile = currentProfile.copyWith(favoriteQuestions: []);
+                await prefs.setString('userProfile', jsonEncode(updatedProfile.toJson()));
+                
+                Navigator.pop(context);
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('🗑️ All favorites cleared'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('Clear All', style: TextStyle(color: Colors.red)),
+            ),
         ],
       ),
     );
@@ -1819,6 +2107,15 @@ ${_getPerformanceMessage()}
                       label: const Text('Stats'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _viewFavorites,
+                      icon: const Icon(Icons.favorite),
+                      label: const Text('Favorites'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
                       ),
                     ),
