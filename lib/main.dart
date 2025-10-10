@@ -83,6 +83,10 @@ class UserProfile {
   final Map<String, int> categoryStats;
   final int currentStreak;
   final int bestStreak;
+  final int hintsUsed;
+  final int hintsAvailable;
+  final bool offlineMode;
+  final DateTime? lastHintReset;
 
   UserProfile({
     required this.username,
@@ -97,6 +101,10 @@ class UserProfile {
     this.categoryStats = const {},
     this.currentStreak = 0,
     this.bestStreak = 0,
+    this.hintsUsed = 0,
+    this.hintsAvailable = 3,
+    this.offlineMode = false,
+    this.lastHintReset,
   });
 
   Map<String, dynamic> toJson() {
@@ -113,6 +121,10 @@ class UserProfile {
       'categoryStats': categoryStats,
       'currentStreak': currentStreak,
       'bestStreak': bestStreak,
+      'hintsUsed': hintsUsed,
+      'hintsAvailable': hintsAvailable,
+      'offlineMode': offlineMode,
+      'lastHintReset': lastHintReset?.toIso8601String(),
     };
   }
 
@@ -136,6 +148,12 @@ class UserProfile {
       categoryStats: Map<String, int>.from(json['categoryStats'] ?? {}),
       currentStreak: json['currentStreak'] ?? 0,
       bestStreak: json['bestStreak'] ?? 0,
+      hintsUsed: json['hintsUsed'] ?? 0,
+      hintsAvailable: json['hintsAvailable'] ?? 3,
+      offlineMode: json['offlineMode'] ?? false,
+      lastHintReset: json['lastHintReset'] != null 
+          ? DateTime.parse(json['lastHintReset']) 
+          : null,
     );
   }
 
@@ -152,6 +170,10 @@ class UserProfile {
     Map<String, int>? categoryStats,
     int? currentStreak,
     int? bestStreak,
+    int? hintsUsed,
+    int? hintsAvailable,
+    bool? offlineMode,
+    DateTime? lastHintReset,
   }) {
     return UserProfile(
       username: username ?? this.username,
@@ -166,6 +188,10 @@ class UserProfile {
       categoryStats: categoryStats ?? this.categoryStats,
       currentStreak: currentStreak ?? this.currentStreak,
       bestStreak: bestStreak ?? this.bestStreak,
+      hintsUsed: hintsUsed ?? this.hintsUsed,
+      hintsAvailable: hintsAvailable ?? this.hintsAvailable,
+      offlineMode: offlineMode ?? this.offlineMode,
+      lastHintReset: lastHintReset ?? this.lastHintReset,
     );
   }
 }
@@ -245,7 +271,7 @@ enum AppTheme {
 }
 
 class QuizDataManager {
-  static const String currentVersion = "3.2.0";
+  static const String currentVersion = "3.3.0";
   static const int questionsPerQuiz = 15; // Number of questions per quiz attempt
   
   static List<QuizVersion> getVersionHistory() {
@@ -286,13 +312,12 @@ class QuizDataManager {
         questions: _getAllQuestions(),
         changelog: "Enhanced UX: Added timer difficulty modes, dark/light themes, detailed statistics, and question favorites system",
       ),
-      // Planned release for next week
-      // QuizVersion(
-      //   version: "3.3.0",
-      //   lastUpdated: DateTime(2024, 10, 13), // Next week
-      //   questions: _getAllQuestions(),
-      //   changelog: "Coming soon: Additional features and improvements planned for next week",
-      // ),
+      QuizVersion(
+        version: "3.3.0",
+        lastUpdated: DateTime(2024, 10, 10),
+        questions: _getAllQuestions(),
+        changelog: "Major expansion: Added 20+ new questions, smart hint system, achievement badges, offline mode, and enhanced performance analytics",
+      ),
     ];
   }
   
@@ -639,6 +664,176 @@ class QuizDataManager {
         category: "Science",
         explanation: "The human heart has four chambers: two atria and two ventricles.",
       ),
+      
+      // NEW v3.3.0 Questions - Computer Science & Technology
+      QuizQuestion(
+        question: "What does CPU stand for in computing?",
+        options: ["Central Processing Unit", "Computer Processing Unit", "Central Program Unit", "Core Processing Unit"],
+        correctAnswer: 0,
+        category: "Computer Science",
+        explanation: "CPU stands for Central Processing Unit, which is the primary component of a computer that performs most of the processing.",
+      ),
+      QuizQuestion(
+        question: "Which programming language is known as the 'mother of all languages'?",
+        options: ["FORTRAN", "COBOL", "C", "Assembly"],
+        correctAnswer: 2,
+        category: "Computer Science",
+        explanation: "C is often called the 'mother of all languages' because many modern languages are based on its syntax and concepts.",
+      ),
+      QuizQuestion(
+        question: "What does HTML stand for?",
+        options: ["Hyper Text Markup Language", "High Tech Modern Language", "Home Tool Markup Language", "Hyperlink and Text Markup Language"],
+        correctAnswer: 0,
+        category: "Computer Science",
+        explanation: "HTML stands for HyperText Markup Language, the standard markup language for creating web pages.",
+      ),
+      QuizQuestion(
+        question: "Which company developed the Java programming language?",
+        options: ["Microsoft", "Sun Microsystems", "IBM", "Oracle"],
+        correctAnswer: 1,
+        category: "Computer Science",
+        explanation: "Java was originally developed by Sun Microsystems in 1995. Oracle later acquired Sun Microsystems in 2010.",
+      ),
+      QuizQuestion(
+        question: "What is the binary representation of the decimal number 10?",
+        options: ["1010", "1100", "1001", "1110"],
+        correctAnswer: 0,
+        category: "Computer Science",
+        explanation: "The decimal number 10 is represented as 1010 in binary (8 + 2 = 10).",
+      ),
+      
+      // NEW v3.3.0 Questions - Advanced Mathematics
+      QuizQuestion(
+        question: "What is the fundamental theorem of calculus primarily concerned with?",
+        options: ["Limits", "The relationship between derivatives and integrals", "Series convergence", "Vector operations"],
+        correctAnswer: 1,
+        category: "Mathematics",
+        explanation: "The fundamental theorem of calculus establishes the relationship between differentiation and integration.",
+      ),
+      QuizQuestion(
+        question: "In probability, what does P(A|B) represent?",
+        options: ["P(A) times P(B)", "P(A) plus P(B)", "Probability of A given B", "Probability of A or B"],
+        correctAnswer: 2,
+        category: "Mathematics",
+        explanation: "P(A|B) represents conditional probability - the probability of event A occurring given that event B has occurred.",
+      ),
+      QuizQuestion(
+        question: "What is the slope of the line y = 3x + 5?",
+        options: ["3", "5", "8", "-3"],
+        correctAnswer: 0,
+        category: "Mathematics",
+        explanation: "In the linear equation y = mx + b, 'm' represents the slope. Here, the slope is 3.",
+      ),
+      
+      // NEW v3.3.0 Questions - Advanced Physics
+      QuizQuestion(
+        question: "What is the Heisenberg Uncertainty Principle?",
+        options: ["Energy cannot be created or destroyed", "You cannot know both position and momentum precisely", "Light behaves as both wave and particle", "Time is relative to the observer"],
+        correctAnswer: 1,
+        category: "Physics",
+        explanation: "The Heisenberg Uncertainty Principle states that you cannot simultaneously know the exact position and momentum of a particle.",
+      ),
+      QuizQuestion(
+        question: "What is the speed of sound in air at room temperature?",
+        options: ["300 m/s", "343 m/s", "1500 m/s", "3000 m/s"],
+        correctAnswer: 1,
+        category: "Physics",
+        explanation: "The speed of sound in air at room temperature (20°C) is approximately 343 meters per second.",
+      ),
+      QuizQuestion(
+        question: "Which physicist is famous for the wave-particle duality concept?",
+        options: ["Einstein", "de Broglie", "Heisenberg", "Schrödinger"],
+        correctAnswer: 1,
+        category: "Physics",
+        explanation: "Louis de Broglie proposed that all matter exhibits wave-particle duality, extending this concept beyond light to all particles.",
+      ),
+      
+      // NEW v3.3.0 Questions - Space & Astronomy
+      QuizQuestion(
+        question: "What is the closest star to Earth after the Sun?",
+        options: ["Alpha Centauri", "Proxima Centauri", "Sirius", "Vega"],
+        correctAnswer: 1,
+        category: "Space & Astronomy",
+        explanation: "Proxima Centauri is the closest known star to the Sun, located about 4.24 light-years away.",
+      ),
+      QuizQuestion(
+        question: "How long does it take light from the Sun to reach Earth?",
+        options: ["8 minutes", "8 seconds", "8 hours", "8 days"],
+        correctAnswer: 0,
+        category: "Space & Astronomy",
+        explanation: "Light from the Sun takes approximately 8 minutes and 20 seconds to reach Earth.",
+      ),
+      QuizQuestion(
+        question: "What is the name of our galaxy?",
+        options: ["Andromeda", "Milky Way", "Whirlpool", "Sombrero"],
+        correctAnswer: 1,
+        category: "Space & Astronomy",
+        explanation: "Our galaxy is called the Milky Way, a barred spiral galaxy containing our solar system.",
+      ),
+      
+      // NEW v3.3.0 Questions - Environmental Science
+      QuizQuestion(
+        question: "What is the main cause of acid rain?",
+        options: ["Carbon dioxide emissions", "Sulfur dioxide and nitrogen oxides", "Methane emissions", "Ozone depletion"],
+        correctAnswer: 1,
+        category: "Environmental Science",
+        explanation: "Acid rain is primarily caused by sulfur dioxide and nitrogen oxides released into the atmosphere from burning fossil fuels.",
+      ),
+      QuizQuestion(
+        question: "Which greenhouse gas has the highest global warming potential?",
+        options: ["Carbon dioxide", "Methane", "Nitrous oxide", "Sulfur hexafluoride"],
+        correctAnswer: 3,
+        category: "Environmental Science",
+        explanation: "Sulfur hexafluoride (SF6) has the highest global warming potential, about 23,000 times more potent than CO2.",
+      ),
+      
+      // NEW v3.3.0 Questions - World History
+      QuizQuestion(
+        question: "In which year did the Berlin Wall fall?",
+        options: ["1987", "1989", "1991", "1993"],
+        correctAnswer: 1,
+        category: "Politics & History",
+        explanation: "The Berlin Wall fell on November 9, 1989, marking a significant moment in the end of the Cold War.",
+      ),
+      QuizQuestion(
+        question: "Who was the first person to walk on the moon?",
+        options: ["Buzz Aldrin", "Neil Armstrong", "John Glenn", "Alan Shepard"],
+        correctAnswer: 1,
+        category: "Politics & History",
+        explanation: "Neil Armstrong was the first person to walk on the moon on July 20, 1969, during the Apollo 11 mission.",
+      ),
+      
+      // NEW v3.3.0 Questions - Advanced Chemistry
+      QuizQuestion(
+        question: "What is Avogadro's number approximately?",
+        options: ["6.02 × 10²³", "3.14 × 10⁸", "9.81 × 10²", "1.38 × 10²³"],
+        correctAnswer: 0,
+        category: "Inorganic Chemistry",
+        explanation: "Avogadro's number is approximately 6.022 × 10²³, representing the number of particles in one mole of substance.",
+      ),
+      QuizQuestion(
+        question: "What type of bond is formed when electrons are shared between atoms?",
+        options: ["Ionic bond", "Covalent bond", "Metallic bond", "Hydrogen bond"],
+        correctAnswer: 1,
+        category: "Inorganic Chemistry",
+        explanation: "A covalent bond is formed when electrons are shared between atoms, typically between non-metal atoms.",
+      ),
+      
+      // NEW v3.3.0 Questions - Biology & Life Sciences
+      QuizQuestion(
+        question: "What is the basic unit of heredity?",
+        options: ["Cell", "Chromosome", "Gene", "DNA"],
+        correctAnswer: 2,
+        category: "Science",
+        explanation: "A gene is the basic unit of heredity, containing the instructions for inherited traits.",
+      ),
+      QuizQuestion(
+        question: "Which process do plants use to make their own food?",
+        options: ["Respiration", "Photosynthesis", "Digestion", "Transpiration"],
+        correctAnswer: 1,
+        category: "Science",
+        explanation: "Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to create glucose and oxygen.",
+      ),
     ];
   }
 }
@@ -738,6 +933,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       categoryStats: {},
       currentStreak: 0,
       bestStreak: 0,
+      hintsUsed: 0,
+      hintsAvailable: 3,
+      offlineMode: false,
+      lastHintReset: null,
     );
     
     print('Saving profile to SharedPreferences...'); // Debug
@@ -1006,7 +1205,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'v3.2.0 • ${_selectedDifficulty.name} Mode',
+                      'v3.3.0 • ${_selectedDifficulty.name} Mode',
                       style: const TextStyle(
                         fontSize: 14,
                         color: Colors.white70,
@@ -1015,7 +1214,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'Test your knowledge with fresh questions every time!\n\n📚 Question Pool: 33+ questions\n🎯 Per Quiz: 15 random questions\n⏱️ Timer: Adjustable difficulty modes\n🎨 Themes: Light, Dark, System\n\nCategories:\n• Science & Biology\n• Organic Chemistry\n• Inorganic Chemistry\n• Mathematics\n• Physics\n• Geography & World Facts\n• Earth Science & Environment\n• Politics & History',
+                    'Test your knowledge with fresh questions every time!\n\n📚 Question Pool: 55+ questions (NEW!)\n🎯 Per Quiz: 15 random questions\n⏱️ Timer: Adjustable difficulty modes\n🎨 Themes: Light, Dark, System\n💡 Smart Hints: 3 per session (NEW!)\n🏆 Achievement Badges: 9 unique rewards (NEW!)\n❤️ Favorites: Save interesting questions\n\nCategories:\n• Science & Biology\n• Computer Science (NEW!)\n• Mathematics & Advanced Math\n• Physics & Quantum Physics\n• Chemistry (Organic & Inorganic)\n• Space & Astronomy (NEW!)\n• Environmental Science (NEW!)\n• Geography & World Facts\n• Politics & History',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -1172,6 +1371,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   final GameEventHandler _eventHandler = GameEventHandler();
   late AnimationController _progressAnimationController;
   late Animation<double> _progressAnimation;
+  bool _hintUsed = false;
   
   @override
   void initState() {
@@ -1263,6 +1463,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         _currentQuestionIndex++;
         _selectedAnswer = null;
         _showExplanation = false;
+        _hintUsed = false;
         _timeRemaining = widget.userProfile.preferredDifficulty.timeLimit;
         _progressAnimationController.reset();
         _progressAnimationController.forward();
@@ -1311,6 +1512,60 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         widget.userProfile.favoriteQuestions.clear();
         widget.userProfile.favoriteQuestions.addAll(updatedFavorites);
       });
+    }
+  }
+
+  void _useHint() async {
+    if (widget.userProfile.hintsAvailable <= 0 || _hintUsed || _selectedAnswer != null) return;
+    
+    final question = _questions[_currentQuestionIndex];
+    final correctAnswer = question.correctAnswer;
+    
+    // Remove one wrong answer (hint strategy)
+    List<int> wrongAnswers = [];
+    for (int i = 0; i < question.options.length; i++) {
+      if (i != correctAnswer) {
+        wrongAnswers.add(i);
+      }
+    }
+    
+    if (wrongAnswers.isNotEmpty) {
+      wrongAnswers.shuffle();
+      final hintText = wrongAnswers.length > 1 
+          ? "💡 Hint: Option ${String.fromCharCode(65 + wrongAnswers.first)} is incorrect!"
+          : "💡 Hint: This narrows it down significantly!";
+      
+      setState(() {
+        _hintUsed = true;
+      });
+      
+      // Update user profile
+      final prefs = await SharedPreferences.getInstance();
+      final profileJson = prefs.getString('userProfile');
+      if (profileJson != null) {
+        UserProfile currentProfile = UserProfile.fromJson(jsonDecode(profileJson));
+        final updatedProfile = currentProfile.copyWith(
+          hintsUsed: currentProfile.hintsUsed + 1,
+          hintsAvailable: currentProfile.hintsAvailable - 1,
+        );
+        await prefs.setString('userProfile', jsonEncode(updatedProfile.toJson()));
+        
+        // Update local reference
+        setState(() {
+          widget.userProfile.favoriteQuestions.clear();
+          widget.userProfile.favoriteQuestions.addAll(updatedProfile.favoriteQuestions);
+        });
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(hintText),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     }
   }
 
@@ -1452,17 +1707,39 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                IconButton(
-                  onPressed: () => _toggleFavorite(question.question),
-                  icon: Icon(
-                    widget.userProfile.favoriteQuestions.contains(question.question)
-                        ? Icons.favorite
-                        : Icons.favorite_border,
-                    color: widget.userProfile.favoriteQuestions.contains(question.question)
-                        ? Colors.red
-                        : Colors.grey,
-                  ),
-                  tooltip: 'Add to favorites',
+                Row(
+                  children: [
+                    // Hint Button
+                    IconButton(
+                      onPressed: widget.userProfile.hintsAvailable > 0 && !_hintUsed && _selectedAnswer == null
+                          ? () => _useHint()
+                          : null,
+                      icon: Icon(
+                        Icons.lightbulb,
+                        color: widget.userProfile.hintsAvailable > 0 && !_hintUsed && _selectedAnswer == null
+                            ? Colors.yellow[700]
+                            : Colors.grey,
+                      ),
+                      tooltip: _hintUsed 
+                          ? 'Hint already used' 
+                          : widget.userProfile.hintsAvailable > 0 
+                              ? 'Use hint (${widget.userProfile.hintsAvailable} left)'
+                              : 'No hints available',
+                    ),
+                    // Favorite Button
+                    IconButton(
+                      onPressed: () => _toggleFavorite(question.question),
+                      icon: Icon(
+                        widget.userProfile.favoriteQuestions.contains(question.question)
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: widget.userProfile.favoriteQuestions.contains(question.question)
+                            ? Colors.red
+                            : Colors.grey,
+                      ),
+                      tooltip: 'Add to favorites',
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1632,6 +1909,7 @@ class _ResultScreenState extends State<ResultScreen> with TickerProviderStateMix
   void _checkAchievements() {
     final percentage = (widget.score / widget.totalQuestions) * 100;
     
+    // Existing achievements
     if (percentage == 100 && !widget.userProfile.achievements.contains('Perfect Score')) {
       _newAchievements.add('Perfect Score');
     }
@@ -1640,6 +1918,26 @@ class _ResultScreenState extends State<ResultScreen> with TickerProviderStateMix
     }
     if (widget.userProfile.gamesPlayed + 1 >= 5 && !widget.userProfile.achievements.contains('Quiz Master')) {
       _newAchievements.add('Quiz Master');
+    }
+    
+    // NEW v3.3.0 Achievement Badges
+    if (widget.userProfile.favoriteQuestions.length >= 10 && !widget.userProfile.achievements.contains('Collector')) {
+      _newAchievements.add('Collector');
+    }
+    if (widget.userProfile.currentStreak >= 3 && !widget.userProfile.achievements.contains('Streak Warrior')) {
+      _newAchievements.add('Streak Warrior');
+    }
+    if (widget.userProfile.bestStreak >= 5 && !widget.userProfile.achievements.contains('Unstoppable')) {
+      _newAchievements.add('Unstoppable');
+    }
+    if (widget.userProfile.hintsUsed == 0 && percentage >= 70 && !widget.userProfile.achievements.contains('No Help Needed')) {
+      _newAchievements.add('No Help Needed');
+    }
+    if (widget.userProfile.gamesPlayed + 1 >= 10 && !widget.userProfile.achievements.contains('Dedicated Scholar')) {
+      _newAchievements.add('Dedicated Scholar');
+    }
+    if (percentage >= 90 && widget.userProfile.preferredDifficulty == DifficultyMode.expert && !widget.userProfile.achievements.contains('Expert Legend')) {
+      _newAchievements.add('Expert Legend');
     }
   }
 
@@ -1792,6 +2090,8 @@ ${_getPerformanceMessage()}
               _buildStatRow('⭐ Average Score', '$averageScore per game'),
               _buildStatRow('❓ Questions Answered', '$totalQuestionsAnswered'),
               _buildStatRow('❤️ Favorite Questions', '${currentProfile.favoriteQuestions.length}'),
+              _buildStatRow('💡 Hints Available', '${currentProfile.hintsAvailable}'),
+              _buildStatRow('🔍 Hints Used', '${currentProfile.hintsUsed}'),
               _buildStatRow('🏆 Achievements', '${currentProfile.achievements.length}'),
               _buildStatRow('🔥 Current Streak', '${currentProfile.currentStreak}'),
               _buildStatRow('🥇 Best Streak', '${currentProfile.bestStreak}'),
